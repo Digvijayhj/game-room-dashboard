@@ -1,5 +1,4 @@
 name: Frontend CI/CD - Deploy Vite to EC2
-
 on:
   push:
     branches:
@@ -9,31 +8,25 @@ on:
     branches:
       - master
       - develop
-
 permissions:
   contents: write
-
 jobs:
   deploy-frontend:
     name: Build & Deploy Vite App to EC2
     runs-on: ubuntu-latest
     env:
       NODE_ENV: production
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-
       - name: Install Dependencies
         run: npm install
-
       - name: Determine and Bump Version
         id: versioning
         if: github.ref == 'refs/heads/master'
@@ -59,14 +52,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag $NEW_TAG
           git push origin $NEW_TAG
-
       - name: Inject Version into Build
         run: |
           echo "VITE_APP_VERSION=$VERSION" >> .env.production
-
       - name: Build Project Using Vite
         run: npx vite build
-
       - name: Prepare Remote Folder
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -75,7 +65,6 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             mkdir -p /tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }}
-
       - name: Upload Build to EC2
         uses: appleboy/scp-action@master
         with:
@@ -84,7 +73,6 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           source: "dist/*"
           target: "/tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }}"
-
       - name: Activate New Build (Blue-Green)
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -99,7 +87,6 @@ jobs:
             sudo cp -r /tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }} /var/www/html
             sudo systemctl restart nginx
             echo "✅ Deployed version ${{ env.VERSION || 'develop' }}"
-
       - name: Rollback Instructions
         run: |
           echo "To rollback, SSH into EC2 and run:"
