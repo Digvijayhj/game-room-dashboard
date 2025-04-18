@@ -130,6 +130,11 @@ If using a school-provided or external domain:
   *Designer & Developer of Game Room Dashboard*
 
 ---
+## Version
+
+v0.0.2
+
+---
 
 ## 📄 License
 
