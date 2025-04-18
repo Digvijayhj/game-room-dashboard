@@ -31,6 +31,9 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Install Vite Globally (fix vite not found)
+        run: npm install -g vite
+
       - name: Determine and Bump Version
         id: versioning
         if: github.ref == 'refs/heads/master'
@@ -105,4 +108,3 @@ jobs:
           echo "sudo rm -rf /var/www/html"
           echo "sudo cp -r /var/www/html-old /var/www/html"
           echo "sudo systemctl restart nginx"
-
