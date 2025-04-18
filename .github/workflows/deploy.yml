@@ -30,12 +30,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+          cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci # Using npm ci for cleaner, more reliable installs in CI
-
-      - name: Install Vite
-        run: npm install vite --save-dev # Ensure Vite is installed
+        run: npm ci
 
       - name: Determine and Bump Version
         id: versioning
@@ -67,8 +65,10 @@ jobs:
         run: |
           echo "VITE_APP_VERSION=$VERSION" >> .env.production
 
-      - name: Build Project Using Vite
-        run: npm run build # This uses the build script from your package.json
+      - name: Build Project
+        run: |
+          # Use npx to ensure vite is found
+          npx vite build
 
       - name: Prepare Remote Folder
         uses: appleboy/ssh-action@v1.0.0
@@ -87,6 +87,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           source: "dist/*"
           target: "/tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }}"
+          strip_components: 1
 
       - name: Activate New Build (Blue-Green)
         uses: appleboy/ssh-action@v1.0.0
@@ -99,8 +100,8 @@ jobs:
             if [ -d /var/www/html ]; then
               sudo mv /var/www/html /var/www/html-old
             fi
-            sudo cp -r /tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }} /var/www/html
-            sudo chown -R www-data:www-data /var/www/html
+            sudo mkdir -p /var/www/html
+            sudo cp -r /tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }}/* /var/www/html/
             sudo systemctl restart nginx
             echo "✅ Deployed version ${{ env.VERSION || 'develop' }}"
 
@@ -108,6 +109,5 @@ jobs:
         run: |
           echo "To rollback, SSH into EC2 and run:"
           echo "sudo rm -rf /var/www/html"
-          echo "sudo cp -r /var/www/html-old /var/www/html"
-          echo "sudo chown -R www-data:www-data /var/www/html"
+          echo "sudo mv /var/www/html-old /var/www/html"
           echo "sudo systemctl restart nginx"
