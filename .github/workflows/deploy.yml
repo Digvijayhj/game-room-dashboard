@@ -31,8 +31,11 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install Vite Globally (fix vite not found)
-        run: npm install -g vite
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Install Vite Locally (if needed)
+        run: npm install vite
 
       - name: Determine and Bump Version
         id: versioning
@@ -64,10 +67,8 @@ jobs:
         run: |
           echo "VITE_APP_VERSION=$VERSION" >> .env.production
 
-      - name: Install Dependencies & Build
-        run: |
-          npm install
-          npm run build
+      - name: Build Project Using Local Vite
+        run: npx vite build
 
       - name: Prepare Remote Folder
         uses: appleboy/ssh-action@v1.0.0
