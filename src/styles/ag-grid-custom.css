@@ -1,0 +1,45 @@
+/* Custom AG Grid theme styles */
+.ag-theme-alpine {
+    --ag-background-color: transparent;
+    --ag-odd-row-background-color: rgba(0, 0, 0, 0.03);
+    --ag-header-background-color: rgba(0, 0, 0, 0.04);
+    --ag-border-color: rgba(0, 0, 0, 0.1);
+    --ag-row-border-color: rgba(0, 0, 0, 0.1);
+    --ag-header-column-separator-display: block;
+    --ag-header-column-separator-color: rgba(0, 0, 0, 0.1);
+    --ag-header-column-separator-height: 50%;
+    --ag-header-column-resize-handle-display: block;
+    --ag-header-column-resize-handle-color: rgba(0, 0, 0, 0.3);
+    --ag-header-foreground-color: var(--foreground);
+    --ag-font-size: 14px;
+    --ag-font-family: var(--font-sans);
+    --ag-cell-horizontal-padding: 16px;
+}
+
+.ag-theme-alpine .ag-header-cell {
+    font-weight: 600;
+}
+
+.ag-theme-alpine .ag-row {
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--ag-border-color);
+}
+
+/* Game dashboard specific theme */
+.ag-theme-game-dashboard {
+    --ag-background-color: transparent;
+    --ag-odd-row-background-color: rgba(0, 0, 0, 0.03);
+    --ag-header-background-color: rgba(0, 0, 0, 0.04);
+    --ag-border-color: rgba(0, 0, 0, 0.1);
+    --ag-row-border-color: rgba(0, 0, 0, 0.1);
+    --ag-header-column-separator-display: block;
+    --ag-header-column-separator-color: rgba(0, 0, 0, 0.1);
+    --ag-header-column-separator-height: 50%;
+    --ag-header-column-resize-handle-display: block;
+    --ag-header-column-resize-handle-color: rgba(0, 0, 0, 0.3);
+    --ag-header-foreground-color: var(--foreground);
+    --ag-font-size: 14px;
+    --ag-font-family: var(--font-sans);
+    --ag-cell-horizontal-padding: 16px;
+}
