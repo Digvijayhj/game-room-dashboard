@@ -17,8 +17,6 @@ jobs:
   deploy-frontend:
     name: Build & Deploy Vite App to EC2
     runs-on: ubuntu-latest
-    env:
-      NODE_ENV: production
 
     steps:
       - name: Checkout Code
@@ -32,11 +30,13 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Install Dependencies
-        run: |
-          npm install --global vite
-          npm ci
-          npm list vite # Verify vite is installed
+      - name: Install Dependencies (Include devDependencies)
+        run: npm install
+        env:
+          NODE_ENV: development
+
+      - name: Set NODE_ENV to production
+        run: echo "NODE_ENV=production" >> $GITHUB_ENV
 
       - name: Determine and Bump Version
         id: versioning
@@ -67,16 +67,9 @@ jobs:
       - name: Inject Version into Build
         run: |
           echo "VITE_APP_VERSION=$VERSION" >> .env.production
-          cat .env.production # Verify the file was created
 
-      - name: Build Project
-        run: |
-          echo "Checking node_modules/.bin contents:"
-          ls -la node_modules/.bin || echo "No node_modules/.bin directory"
-          which vite || echo "Vite not found in PATH"
-          npm config get prefix
-          npx vite --version
-          npm run build
+      - name: Build Project Using Vite
+        run: npx vite build
 
       - name: Prepare Remote Folder
         uses: appleboy/ssh-action@v1.0.0
@@ -95,7 +88,6 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           source: "dist/*"
           target: "/tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }}"
-          strip_components: 1
 
       - name: Activate New Build (Blue-Green)
         uses: appleboy/ssh-action@v1.0.0
@@ -108,9 +100,7 @@ jobs:
             if [ -d /var/www/html ]; then
               sudo mv /var/www/html /var/www/html-old
             fi
-            sudo mkdir -p /var/www/html
-            sudo cp -r /tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }}/* /var/www/html/
-            sudo chown -R www-data:www-data /var/www/html
+            sudo cp -r /tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }} /var/www/html
             sudo systemctl restart nginx
             echo "✅ Deployed version ${{ env.VERSION || 'develop' }}"
 
@@ -118,6 +108,5 @@ jobs:
         run: |
           echo "To rollback, SSH into EC2 and run:"
           echo "sudo rm -rf /var/www/html"
-          echo "sudo mv /var/www/html-old /var/www/html"
-          echo "sudo chown -R www-data:www-data /var/www/html"
+          echo "sudo cp -r /var/www/html-old /var/www/html"
           echo "sudo systemctl restart nginx"
