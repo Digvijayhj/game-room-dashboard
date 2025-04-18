@@ -1,6 +1,14 @@
 name: Frontend CI/CD - Deploy Vite to EC2 (Manual Build)
 
 on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - master
+      - develop
   workflow_dispatch:
 
 permissions:
@@ -8,12 +16,39 @@ permissions:
 
 jobs:
   deploy-frontend:
-    name: Deploy Manually Built Vite App to EC2
+    name: Deploy Prebuilt Vite App to EC2
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Determine and Bump Version (master only)
+        id: versioning
+        if: github.ref == 'refs/heads/master'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          if [[ $LATEST_TAG =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR=${BASH_REMATCH[1]}
+            MINOR=${BASH_REMATCH[2]}
+            PATCH=${BASH_REMATCH[3]}
+            PATCH=$((PATCH + 1))
+            NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          else
+            NEW_TAG="v1.0.0"
+          fi
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "VERSION=$NEW_TAG" >> $GITHUB_ENV
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
 
       - name: Upload Pre-built App to EC2
         uses: appleboy/scp-action@master
@@ -22,7 +57,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           source: "dist/*"
-          target: "/tmp/vite-deploy"
+          target: "/tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }}"
 
       - name: Activate New Build (Blue-Green)
         uses: appleboy/ssh-action@v1.0.0
@@ -35,9 +70,9 @@ jobs:
             if [ -d /var/www/html ]; then
               sudo mv /var/www/html /var/www/html-old
             fi
-            sudo mv /tmp/vite-deploy /var/www/html
+            sudo cp -r /tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }} /var/www/html
             sudo systemctl restart nginx
-            echo "✅ Deployed manually built Vite app"
+            echo "✅ Deployed version ${{ env.VERSION || 'develop' }}"
 
       - name: Rollback Instructions
         run: |
@@ -45,4 +80,3 @@ jobs:
           echo "sudo rm -rf /var/www/html"
           echo "sudo cp -r /var/www/html-old /var/www/html"
           echo "sudo systemctl restart nginx"
-
