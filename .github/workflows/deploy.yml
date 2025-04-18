@@ -33,7 +33,10 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci
+        run: |
+          npm install --global vite
+          npm ci
+          npm list vite # Verify vite is installed
 
       - name: Determine and Bump Version
         id: versioning
@@ -64,11 +67,16 @@ jobs:
       - name: Inject Version into Build
         run: |
           echo "VITE_APP_VERSION=$VERSION" >> .env.production
+          cat .env.production # Verify the file was created
 
       - name: Build Project
         run: |
-          # Use npx to ensure vite is found
-          npx vite build
+          echo "Checking node_modules/.bin contents:"
+          ls -la node_modules/.bin || echo "No node_modules/.bin directory"
+          which vite || echo "Vite not found in PATH"
+          npm config get prefix
+          npx vite --version
+          npm run build
 
       - name: Prepare Remote Folder
         uses: appleboy/ssh-action@v1.0.0
@@ -102,6 +110,7 @@ jobs:
             fi
             sudo mkdir -p /var/www/html
             sudo cp -r /tmp/vite-deploy/releases/${{ env.VERSION || 'develop' }}/* /var/www/html/
+            sudo chown -R www-data:www-data /var/www/html
             sudo systemctl restart nginx
             echo "✅ Deployed version ${{ env.VERSION || 'develop' }}"
 
@@ -110,4 +119,5 @@ jobs:
           echo "To rollback, SSH into EC2 and run:"
           echo "sudo rm -rf /var/www/html"
           echo "sudo mv /var/www/html-old /var/www/html"
+          echo "sudo chown -R www-data:www-data /var/www/html"
           echo "sudo systemctl restart nginx"
