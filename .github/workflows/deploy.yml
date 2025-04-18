@@ -34,9 +34,6 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Install Vite Locally (if needed)
-        run: npm install vite
-
       - name: Determine and Bump Version
         id: versioning
         if: github.ref == 'refs/heads/master'
@@ -67,7 +64,7 @@ jobs:
         run: |
           echo "VITE_APP_VERSION=$VERSION" >> .env.production
 
-      - name: Build Project Using Local Vite
+      - name: Build Project Using Vite
         run: npx vite build
 
       - name: Prepare Remote Folder
